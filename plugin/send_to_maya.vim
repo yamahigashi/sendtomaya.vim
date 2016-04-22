@@ -4,7 +4,9 @@ endif
 let g:loaded_send_to_maya_plugin = 1
 
 
-command! -nargs=* -range -bang SendToMaya <line1>,<line2>call send_to_maya#send('<bang>' == '!', '', <q-args>)
+command! -nargs=* -range -bang SendToMaya <line1>,<line2>call send_to_maya#send('<bang>' == '!', '', 0, <q-args>)
+command! -nargs=* -range -bang SendToMayaPy <line1>,<line2>call send_to_maya#send('<bang>' == '!', '', 1, <q-args>)
+command! -nargs=* -range -bang SendToMayaMel <line1>,<line2>call send_to_maya#send('<bang>' == '!', '', 2, <q-args>)
 
 let s:last_command = 'SendToMaya'
 
@@ -79,7 +81,7 @@ function! s:send_to_maya_repeat()
 endfunction
 
 
-function! s:generic_send_to_maya_op(type, vmode)
+function! s:generic_send_to_maya_op(type, vmode, codetype)
 
   if !&modifiable
     if a:vmode
@@ -117,12 +119,18 @@ endfunction
 
 
 function! s:send_to_maya_op(type, ...)
-  call s:generic_send_to_maya_op(a:type, a:0)
+  call s:generic_send_to_maya_op(a:type, a:0, a:1)
 endfunction
 
 
 nnoremap <silent> <Plug>(SendToMaya) :set opfunc=<SID>send_to_maya_op<Enter>g@
 vnoremap <silent> <Plug>(SendToMaya) :<C-U>call <SID>send_to_maya_op(visualmode(), 1)<Enter>
+
+nnoremap <silent> <Plug>(SendToMayaPy) :set opfunc=<SID>send_to_maya_op<Enter>g@
+vnoremap <silent> <Plug>(SendToMayaPy) :<C-U>call <SID>send_to_maya_op(visualmode(), 1, 1)<Enter>
+
+nnoremap <silent> <Plug>(SendToMayaMel) :set opfunc=<SID>send_to_maya_op<Enter>g@
+vnoremap <silent> <Plug>(SendToMayaMel) :<C-U>call <SID>send_to_maya_op(visualmode(), 1, 2)<Enter>
 
 " vim-repeat support
 nnoremap <silent> <Plug>(SendToMayaRepeat) :call <SID>send_to_maya_repeat()<Enter>

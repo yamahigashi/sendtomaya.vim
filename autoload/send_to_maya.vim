@@ -75,11 +75,7 @@ try:
     with os.fdopen(temp[0], 'w') as f:
         f.write(code)
 
-    # TODO: determine code_type
-    if "mel" not in vim.current.buffer[0]:
-        code_type = "python"
-    else:
-        code_type = "mel"
+    code_type = unicode(vim.eval("s:language"), 'utf-8')
 
     # second step: generate command to execute in maya
     command = textwrap.dedent('''
@@ -134,7 +130,53 @@ function! s:get_buffer_contents()
 endfunction
 
 
-function! send_to_maya#send(bang, visualmode, expr) range
+function! s:detect_codetype()
+  if get(g:, 'send_to_maya_prefer_language') && g:send_to_maya_prefer_language == 'mel'
+    let match_shebang_py = matchstr(getline(0), '^#!\(.*py.*\)')
+    " echo match_shebang_py
+    " echo "0"
+    if !empty(match_shebang_py)
+      return "python"
+    else
+      return "mel"
+    endif
+  elseif get(g:, 'send_to_maya_prefer_language') && g:send_to_maya_prefer_language == 'python'
+    let match_shebang_mel = matchstr(getline(0), '^#!\(.*mel.*\)')
+    " echo match_shebang_mel
+    " echo "1"
+    if !empty(match_shebang_mel)
+      return "mel"
+    else
+      return "python"
+    endif
+  else
+    let match_shebang_mel = matchstr(getline(0), '.*mel.*')
+    " echo match_shebang_mel
+    " echo "2"
+    if !empty(match_shebang_mel)
+      return "mel"
+    endif
+    let match_shebang_py = matchstr(getline(0), '^#!\(.*py.*\)')
+    " echo match_shebang_py
+    " echo "3"
+    if !empty(match_shebang_py)
+      return "python"
+    endif
+  endif
+
+  return "python"
+endfunction
+
+
+function! send_to_maya#send(bang, visualmode, codetype, expr) range
+
+  if a:codetype == 0
+    let s:language = s:detect_codetype()
+  elseif a:codetype == 1
+    let s:language = "python"
+  else
+    let s:language = "mel"
+  endif
 
   try
     if a:visualmode == "v" || a:visualmode == "V"
@@ -143,7 +185,7 @@ function! send_to_maya#send(bang, visualmode, expr) range
       let code = s:get_buffer_contents()
     endif
     call s:do_send(code)
-    let g:send_to_maya_last_command = s:echon()
+    " let g:send_to_maya_last_command = s:echon()
 
 
   catch /^\%(Vim:Interrupt\|exit\)$/
