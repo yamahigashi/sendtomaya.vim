@@ -57,7 +57,7 @@ function! s:echon()
 endfunction
 
 
-function! s:do_send(code)
+function! s:do_send(code, language)
 
 python << EOF
 import vim
@@ -75,7 +75,8 @@ try:
     with os.fdopen(temp[0], 'w') as f:
         f.write(code)
 
-    code_type = unicode(vim.eval("s:language"), 'utf-8')
+    code_type = unicode(vim.eval("a:language"), 'utf-8')
+    print code_type
 
     # second step: generate command to execute in maya
     command = textwrap.dedent('''
@@ -86,15 +87,16 @@ try:
     temp = os.path.abspath(r"{0}")
     code_type = "{1}"
     with open(temp, "r") as f:
+
         if code_type == "python":
             exec(f, __main__.__dict__, __main__.__dict__)
 
         elif code_type == "mel":
            mel_cmd = 'source "%s"' % temp
            om.MGlobal.executeCommand(mel_cmd, True, True)
+
     os.remove(temp)
     '''.format(temp[1], code_type))
-
     command = command.replace("\\", "/").encode('string_escape').replace('"', r'\"')
 
     # sencond step: connet to maya
@@ -107,8 +109,13 @@ try:
     # third step: execute command file
     sk.send('python("{}")'.format(command))
 
+    # forth step: error handling
+    mes = sk.recv(4096)
+    print "receive: {0}".format(unicode(mes, 'utf-8'))
+
 except Exception as e:
     print "vim to maya fail: {}".format(e)
+
 finally:
     sk.close()
 EOF
@@ -131,51 +138,49 @@ endfunction
 
 
 function! s:detect_codetype()
+
   if get(g:, 'send_to_maya_prefer_language') && g:send_to_maya_prefer_language == 'mel'
-    let match_shebang_py = matchstr(getline(0), '^#!\(.*py.*\)')
-    " echo match_shebang_py
-    " echo "0"
+    let match_shebang_py = matchstr(getline(1), '^#!\(.*py.*\)')
     if !empty(match_shebang_py)
       return "python"
     else
       return "mel"
     endif
+
   elseif get(g:, 'send_to_maya_prefer_language') && g:send_to_maya_prefer_language == 'python'
-    let match_shebang_mel = matchstr(getline(0), '^#!\(.*mel.*\)')
-    " echo match_shebang_mel
-    " echo "1"
+    let match_shebang_mel = matchstr(getline(1), '^#!\(.*mel.*\)')
     if !empty(match_shebang_mel)
       return "mel"
     else
       return "python"
     endif
+
   else
-    let match_shebang_mel = matchstr(getline(0), '.*mel.*')
-    " echo match_shebang_mel
-    " echo "2"
+    let match_shebang_mel = matchstr(getline(1), '.*mel.*')
     if !empty(match_shebang_mel)
       return "mel"
     endif
-    let match_shebang_py = matchstr(getline(0), '^#!\(.*py.*\)')
-    " echo match_shebang_py
-    " echo "3"
+    let match_shebang_py = matchstr(getline(1), '^#!\(.*py.*\)')
     if !empty(match_shebang_py)
       return "python"
     endif
   endif
 
   return "python"
+
 endfunction
 
 
 function! send_to_maya#send(bang, visualmode, codetype, expr) range
 
   if a:codetype == 0
-    let s:language = s:detect_codetype()
+    let a:language = s:detect_codetype()
+
   elseif a:codetype == 1
-    let s:language = "python"
+    let a:language = "python"
+
   else
-    let s:language = "mel"
+    let a:language = "mel"
   endif
 
   try
@@ -184,8 +189,9 @@ function! send_to_maya#send(bang, visualmode, codetype, expr) range
     else
       let code = s:get_buffer_contents()
     endif
-    call s:do_send(code)
-    " let g:send_to_maya_last_command = s:echon()
+
+    call s:do_send(code, a:language)
+    let g:send_to_maya_last_command = s:echon()
 
 
   catch /^\%(Vim:Interrupt\|exit\)$/
