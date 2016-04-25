@@ -67,38 +67,36 @@ import tempfile
 import textwrap
 import re
 
-try:
 
-    # filst step: make tmp file for execute
-    code = unicode(vim.eval("a:code"), 'utf-8')
-    temp = tempfile.mkstemp()
-    with os.fdopen(temp[0], 'w') as f:
-        f.write(code)
+# filst step: make tmp file for execute
+code = unicode(vim.eval("a:code"), 'utf-8')
+temp = tempfile.mkstemp()
+with os.fdopen(temp[0], 'w') as f:
+    f.write(code)
 
-    code_type = unicode(vim.eval("a:language"), 'utf-8')
-    print code_type
-
-    # second step: generate command to execute in maya
+# second step: generate command to execute in maya
+code_type = unicode(vim.eval("a:language"), 'utf-8')
+if code_type == "python":
     command = textwrap.dedent('''
-    import __main__
-    import os
-    import maya.OpenMaya as om
+        import __main__
+        import os
+        import maya.OpenMaya as om
 
-    temp = os.path.abspath(r"{0}")
-    code_type = "{1}"
-    with open(temp, "r") as f:
+        temp = os.path.abspath(r"{0}")
+        code_type = "{1}"
 
-        if code_type == "python":
-            exec(f, __main__.__dict__, __main__.__dict__)
-
-        elif code_type == "mel":
-           mel_cmd = 'source "%s"' % temp
-           om.MGlobal.executeCommand(mel_cmd, True, True)
-
-    os.remove(temp)
+            with open(temp, "r") as f:
+                exec(f, __main__.__dict__, __main__.__dict__)
+        os.remove(temp)
     '''.format(temp[1], code_type))
+    command = 'python("{}")'.format(command)
     command = command.replace("\\", "/").encode('string_escape').replace('"', r'\"')
 
+elif code_type == "mel":
+    command = textwrap.dedent('''source "{0}";sysFile -delete "{0}"'''.format(temp[1]))
+    command = command.replace("\\", "/").encode('string_escape')
+
+try:
     # sencond step: connet to maya
     host = vim.eval("s:get_target_host()")
     port = int(vim.eval("s:get_target_port()"))
@@ -107,7 +105,7 @@ try:
     sk.connect((host, port))
 
     # third step: execute command file
-    sk.send('python("{}")'.format(command))
+    sk.send(command)
 
     # forth step: error handling
     mes = sk.recv(4096)
@@ -139,6 +137,8 @@ endfunction
 
 function! s:detect_codetype()
 
+  " ---------------------------------------------------------------------------
+  " determine by shebang
   if get(g:, 'send_to_maya_prefer_language') && g:send_to_maya_prefer_language == 'mel'
     let match_shebang_py = matchstr(getline(1), '^#!\(.*py.*\)')
     if !empty(match_shebang_py)
@@ -166,6 +166,25 @@ function! s:detect_codetype()
     endif
   endif
 
+  " ---------------------------------------------------------------------------
+  "  determine by semicolon(;) at eof
+  let l:semicolon_count = 0.0
+  let l:total_line_count = 0.0
+  for i in range(1, line('$'))
+    if !empty(matchstr(getline(i), ';$'))
+      let l:semicolon_count += 1.0 
+    endif
+    if match(getline(i), '^ *$')
+      let l:total_line_count += 1.0
+    endif
+  endfor
+
+  if ( semicolon_count / total_line_count ) > 0.5
+    return "mel"
+  endif
+
+  " ---------------------------------------------------------------------------
+  " default
   return "python"
 
 endfunction

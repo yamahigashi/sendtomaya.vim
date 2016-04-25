@@ -1,8 +1,8 @@
+
 Send to maya Vim Plugin
 =======================
 
 Vim plugin for Autodesk Maya script development.
-
 
 About
 -----
@@ -34,16 +34,30 @@ Setting
 
 You can set the command port variable.
 
-* command port
-```vim:.vimrc
-g:send_to_maya_host="localhost"
-g:send_to_maya_port=12345
-```
-
-* key mapping
 ```vim
-vmap maya <Plug>(SendToMaya)
-nmap <silent><Leader>maya :SendToMaya<CR>
+"""""""""""""""""""""""""""""""""""""""""""
+" Send To Maya
+"""""""""""""""""""""""""""""""""""""""""""
+"  command port
+let g:send_to_maya_host="localhost"
+let g:send_to_maya_port=12345
+
+" language detection(optional)
+let g:send_to_maya_prefer_language = 'python'
+" or
+let g:send_to_maya_prefer_language = 'mel'
+
+"""""""""""""""""""""""""""""""""""""""""""
+" key mapping
+"  auto detect
+vmap mayaa <Plug>(SendToMaya)
+nmap <silent><Leader>mayaa :SendToMaya<CR>
+
+" specify lang
+vmap mayap <Plug>(SendToMayaPy)
+nmap <silent><Leader>mayap :SendToMayaPy<CR>
+vmap mayam <Plug>(SendToMayaMel)
+nmap <silent><Leader>mayam :SendToMayaMel<CR>
 ```
 
 ---
