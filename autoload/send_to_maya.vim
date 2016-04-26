@@ -85,12 +85,12 @@ if code_type == "python":
         temp = os.path.abspath(r"{0}")
         code_type = "{1}"
 
-            with open(temp, "r") as f:
-                exec(f, __main__.__dict__, __main__.__dict__)
+        with open(temp, "r") as f:
+            exec(f, __main__.__dict__, __main__.__dict__)
         os.remove(temp)
     '''.format(temp[1], code_type))
-    command = 'python("{}")'.format(command)
     command = command.replace("\\", "/").encode('string_escape').replace('"', r'\"')
+    command = 'python("{}")'.format(command)
 
 elif code_type == "mel":
     command = textwrap.dedent('''source "{0}";sysFile -delete "{0}"'''.format(temp[1]))
