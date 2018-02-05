@@ -59,7 +59,7 @@ endfunction
 
 function! s:do_send(code, language)
 
-python << EOF
+python3 << EOF
 import vim
 import socket
 import os
@@ -89,12 +89,12 @@ if code_type == "python":
             exec(f, __main__.__dict__, __main__.__dict__)
         os.remove(temp)
     '''.format(temp[1], code_type))
-    command = command.replace("\\", "/").encode('string_escape').replace('"', r'\"')
+    command = command.replace("\\", "/").replace('"', r'\"').replace("\n", "\\n")
     command = 'python("{}")'.format(command)
 
 elif code_type == "mel":
     command = textwrap.dedent('''source "{0}";sysFile -delete "{0}"'''.format(temp[1]))
-    command = command.replace("\\", "/").encode('string_escape')
+    command = command.replace("\\", "/").encode("unicode_escape")
 
 try:
     # sencond step: connet to maya
@@ -105,14 +105,14 @@ try:
     sk.connect((host, port))
 
     # third step: execute command file
-    sk.send(command)
+    sk.send(command.encode())
 
     # forth step: error handling
     mes = sk.recv(4096)
-    print "receive: {0}".format(unicode(mes, 'utf-8'))
+    print("receive: {0}".format(unicode(mes, 'utf-8')))
 
 except Exception as e:
-    print "vim to maya fail: {}".format(e)
+    print("vim to maya fail: {}".format(e))
 
 finally:
     sk.close()
