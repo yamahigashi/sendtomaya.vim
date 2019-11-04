@@ -69,13 +69,14 @@ import re
 
 
 # filst step: make tmp file for execute
-code = unicode(vim.eval("a:code"), 'utf-8')
+code = vim.eval("a:code")
+code = "# coding=utf-8\n" + code
 temp = tempfile.mkstemp()
 with os.fdopen(temp[0], 'w') as f:
     f.write(code)
 
 # second step: generate command to execute in maya
-code_type = unicode(vim.eval("a:language"), 'utf-8')
+code_type = vim.eval("b:language")
 if code_type == "python":
     command = textwrap.dedent('''
         import __main__
@@ -193,13 +194,13 @@ endfunction
 function! send_to_maya#send(bang, visualmode, codetype, expr) range
 
   if a:codetype == 0
-    let a:language = s:detect_codetype()
+    let b:language = s:detect_codetype()
 
   elseif a:codetype == 1
-    let a:language = "python"
+    let b:language = "python"
 
   else
-    let a:language = "mel"
+    let b:language = "mel"
   endif
 
   try
@@ -209,7 +210,7 @@ function! send_to_maya#send(bang, visualmode, codetype, expr) range
       let code = s:get_buffer_contents()
     endif
 
-    call s:do_send(code, a:language)
+    call s:do_send(code, b:language)
     let g:send_to_maya_last_command = s:echon()
 
 
