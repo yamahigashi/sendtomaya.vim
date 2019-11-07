@@ -110,13 +110,14 @@ try:
 
     # forth step: error handling
     mes = sk.recv(4096)
-    print("receive: {0}".format(unicode(mes, 'utf-8')))
+    print("receive: {0}".format(mes))
 
-except Exception as e:
-    print("vim to maya fail: {}".format(e))
+except Exception:
+    import traceback
+    traceback.print_exc()
+    print("send to maya failed")
 
-finally:
-    sk.close()
+sk.close()
 EOF
 endfunction
 
@@ -137,6 +138,11 @@ endfunction
 
 
 function! s:detect_codetype()
+
+  if &filetype == "python"
+    return "python"
+  elseif &filetype == "mel"
+    return "mel"
 
   " ---------------------------------------------------------------------------
   " determine by shebang
