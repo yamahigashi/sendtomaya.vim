@@ -193,13 +193,13 @@ endfunction
 function! send_to_maya#send(bang, visualmode, codetype, expr) range
 
   if a:codetype == 0
-    let a:language = s:detect_codetype()
+    let language = s:detect_codetype()
 
   elseif a:codetype == 1
-    let a:language = "python"
+    let language = "python"
 
   else
-    let a:language = "mel"
+    let language = "mel"
   endif
 
   try
@@ -209,7 +209,7 @@ function! send_to_maya#send(bang, visualmode, codetype, expr) range
       let code = s:get_buffer_contents()
     endif
 
-    call s:do_send(code, a:language)
+    call s:do_send(code, language)
     let g:send_to_maya_last_command = s:echon()
 
 
