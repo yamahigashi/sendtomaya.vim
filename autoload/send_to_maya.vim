@@ -70,8 +70,8 @@ import re
 
 # filst step: make tmp file for execute
 code = unicode(vim.eval("a:code"), 'utf-8')
-temp = tempfile.mkstemp()
-with os.fdopen(temp[0], 'w') as f:
+fd, tmp_path = tempfile.mkstemp()
+with open(tmp_path, 'w', encoding="utf-8") as f:
     f.write(code)
 
 # second step: generate command to execute in maya
