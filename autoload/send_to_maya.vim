@@ -69,13 +69,14 @@ import re
 
 
 # filst step: make tmp file for execute
-code = unicode(vim.eval("a:code"), 'utf-8')
+code = vim.eval("a:code")
+code = "# coding=utf-8\n" + code
 fd, tmp_path = tempfile.mkstemp()
 with open(tmp_path, 'w', encoding="utf-8") as f:
     f.write(code)
 
 # second step: generate command to execute in maya
-code_type = unicode(vim.eval("a:language"), 'utf-8')
+code_type = vim.eval("b:language")
 if code_type == "python":
     command = textwrap.dedent('''
         import __main__
@@ -109,39 +110,45 @@ try:
 
     # forth step: error handling
     mes = sk.recv(4096)
-    print("receive: {0}".format(unicode(mes, 'utf-8')))
+    print("receive: {0}".format(mes))
 
-except Exception as e:
-    print("vim to maya fail: {}".format(e))
+except Exception:
+    import traceback
+    traceback.print_exc()
+    print("send to maya failed")
 
-finally:
-    sk.close()
+sk.close()
 EOF
 endfunction
 
 
 function! s:get_visual_selection()
-  let [lnum1, col1] = getpos("'<")[1:2]
-  let [lnum2, col2] = getpos("'>")[1:2]
-  let lines = getline(lnum1, lnum2)
-  let lines[-1] = lines[-1][: col2 - (&selection == 'inclusive' ? 1 : 2)]
-  let lines[0] = lines[0][col1 - 1:]
-  return join(lines, "\n")
+let [lnum1, col1] = getpos("'<")[1:2]
+let [lnum2, col2] = getpos("'>")[1:2]
+let lines = getline(lnum1, lnum2)
+let lines[-1] = lines[-1][: col2 - (&selection == 'inclusive' ? 1 : 2)]
+let lines[0] = lines[0][col1 - 1:]
+return join(lines, "\n")
 endfunction
 
 
 function! s:get_buffer_contents()
-  return join(getline(1,'$'), "\n")
+return join(getline(1,'$'), "\n")
 endfunction
 
 
 function! s:detect_codetype()
 
+if &filetype == "python"
+return "python"
+  elseif &filetype == "mel"
+  return "mel"
+
   " ---------------------------------------------------------------------------
   " determine by shebang
   if get(g:, 'send_to_maya_prefer_language') && g:send_to_maya_prefer_language == 'mel'
-    let match_shebang_py = matchstr(getline(1), '^#!\(.*py.*\)')
-    if !empty(match_shebang_py)
+  let match_shebang_py = matchstr(getline(1), '^#!\(.*py.*\)')
+  if !empty(match_shebang_py)
       return "python"
     else
       return "mel"
@@ -193,13 +200,13 @@ endfunction
 function! send_to_maya#send(bang, visualmode, codetype, expr) range
 
   if a:codetype == 0
-    let language = s:detect_codetype()
+    let b:language = s:detect_codetype()
 
   elseif a:codetype == 1
-    let language = "python"
+    let b:language = "python"
 
   else
-    let language = "mel"
+    let b:language = "mel"
   endif
 
   try
@@ -209,7 +216,7 @@ function! send_to_maya#send(bang, visualmode, codetype, expr) range
       let code = s:get_buffer_contents()
     endif
 
-    call s:do_send(code, language)
+    call s:do_send(code, b:language)
     let g:send_to_maya_last_command = s:echon()
 
 
