@@ -89,12 +89,12 @@ if code_type == "python":
         with open(temp, "r") as f:
             exec(f, __main__.__dict__, __main__.__dict__)
         os.remove(temp)
-    '''.format(temp[1], code_type))
+    '''.format(tmp_path, code_type))
     command = command.replace("\\", "/").replace('"', r'\"').replace("\n", "\\n")
     command = 'python("{}")'.format(command)
 
 elif code_type == "mel":
-    command = textwrap.dedent('''source "{0}";sysFile -delete "{0}"'''.format(temp[1]))
+    command = textwrap.dedent('''source "{0}";sysFile -delete "{0}"'''.format(tmp_path))
     command = command.replace("\\", "/").encode("unicode_escape")
 
 try:
